@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avoid the Dog Game</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        #gameCanvas {
+            border: 2px solid black;
+        }
+        #startScreen, #instructions {
+            position: absolute;
+            text-align: center;
+            font-size: 24px;
+            color: #333;
+        }
+        #instructions {
+            top: 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <div id="startScreen">
+        Press Space to Start<br>
+        Avoid the Dog!
+    </div>
+    <div id="instructions">
+        Use Left/Right Arrow Keys to Move.<br>
+        Avoid catching the dog 🐕.<br>
+        Skip 10 normal cats 🐱 and the game is over!
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const startScreen = document.getElementById('startScreen');
+        const instructions = document.getElementById('instructions');
+
+        let gameStarted = false;
+        let player = { x: canvas.width / 2, y: canvas.height - 30, width: 30, height: 30 };
+        let animals = [];
+        let score = 0;
+        let missedCats = 0;
+
+        function drawPlayer() {
+            ctx.fillStyle = 'blue';
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+        }
+
+        function drawAnimal(animal) {
+            ctx.fillStyle = animal.type === 'dog' ? 'brown' : 'gray';
+            ctx.fillRect(animal.x, animal.y, animal.width, animal.height);
+            ctx.fillStyle = 'white';
+            ctx.font = '20px Arial';
+            ctx.fillText(animal.type === 'dog' ? '🐕' : '🐱', animal.x + 5, animal.y + 20);
+        }
+
+        function createAnimal() {
+            const type = Math.random() < 0.2 ? 'dog' : 'cat';
+            animals.push({
+                x: Math.random() * (canvas.width - 30),
+                y: 0,
+                width: 30,
+                height: 30,
+                type: type
+            });
+        }
+
+        function updateGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawPlayer();
+
+            if (Math.random() < 0.02) createAnimal();
+
+            animals.forEach((animal, index) => {
+                animal.y += 2;
+                drawAnimal(animal);
+
+                if (animal.y > canvas.height) {
+                    animals.splice(index, 1);
+                    if (animal.type === 'cat') missedCats++;
+                }
+
+                if (
+                    player.x < animal.x + animal.width &&
+                    player.x + player.width > animal.x &&
+                    player.y < animal.y + animal.height &&
+                    player.y + player.height > animal.y
+                ) {
+                    if (animal.type === 'dog') {
+                        gameOver();
+                    } else {
+                        animals.splice(index, 1);
+                        score++;
+                    }
+                }
+            });
+
+            ctx.fillStyle = 'black';
+            ctx.font = '16px Arial';
+            ctx.fillText(`Score: ${score}`, 10, 20);
+            ctx.fillText(`Missed Cats: ${missedCats}`, 10, 40);
+
+            if (missedCats >= 10) {
+                gameOver();
+            } else {
+                requestAnimationFrame(updateGame);
+            }
+        }
+
+        function gameOver() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.font = '30px Arial';
+            ctx.fillText('Game Over!', canvas.width / 2 - 70, canvas.height / 2);
+            ctx.font = '20px Arial';
+            ctx.fillText(`Final Score: ${score}`, canvas.width / 2 - 60, canvas.height / 2 + 40);
+            ctx.fillText('Press Space to Restart', canvas.width / 2 - 100, canvas.height / 2 + 80);
+            gameStarted = false;
+        }
+
+        function startGame() {
+            gameStarted = true;
+            player = { x: canvas.width / 2, y: canvas.height - 30, width: 30, height: 30 };
+            animals = [];
+            score = 0;
+            missedCats = 0;
+            startScreen.style.display = 'none';
+            instructions.style.display = 'none';
+            updateGame();
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.code === 'Space' && !gameStarted) {
+                startGame();
+            } else if (gameStarted) {
+                if (event.code === 'ArrowLeft' && player.x > 0) {
+                    player.x -= 10;
+                } else if (event.code === 'ArrowRight' && player.x < canvas.width - player.width) {
+                    player.x += 10;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
